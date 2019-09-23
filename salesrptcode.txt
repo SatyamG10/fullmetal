@@ -1,0 +1,188 @@
+       ID DIVISION.                                                     
+       PROGRAM-ID. SALESRPT.                                            
+       ENVIRONMENT          DIVISION.                                   
+       INPUT-OUTPUT         SECTION.                                    
+       FILE-CONTROL.                                                    
+             SELECT MASTERFILE ASSIGN TO KSDSDD1                        
+             ORGANIZATION IS INDEXED                                    
+             ACCESS MODE  IS DYNAMIC                                    
+             RECORD KEY   IS PET-ID OF MASREC                           
+             FILE STATUS  IS WS-F1.                                     
+             SELECT PROCESSEDFILE ASSIGN TO AS-PROCDD                   
+             ORGANIZATION IS SEQUENTIAL                                 
+             ACCESS MODE  IS SEQUENTIAL                                 
+             FILE STATUS  IS WS-F2.                                     
+             SELECT OUTFILE ASSIGN TO DD5                               
+             ORGANIZATION IS SEQUENTIAL                                 
+             ACCESS MODE  IS SEQUENTIAL                                 
+             FILE STATUS  IS WS-F3.                                     
+       DATA DIVISION.                                                   
+       FILE SECTION.                                                    
+       FD MASTERFILE.                                                   
+       01 MASREC.                                                       
+          05 PET-ID     PIC X(3).                                       
+          05 PET-TYPE    PIC X.                                         
+           05 PET-TYPE    PIC X.                                         
+       *      88 CAT                VALUE 1.                             
+       *      88 DOG                VALUE 2.                             
+       *      88 BIRD               VALUE 3.                             
+       *      88 FISH               VALUE 4.                             
+           05 BREED         PIC X(10).                                   
+           05 DOP           PIC 9(6).                                    
+           05 COSTPR        PIC 9999V99.                                 
+           05 QUANTA        PIC 9(2).                                    
+           05               PIC X(52).                                   
+        FD PROCESSEDFILE.                                                
+        01 PROCESSEDREC.                                                 
+           05 PET-ID       PIC X(3).                                     
+           05 DOP          PIC 9(6).                                     
+           05 QUANTB       PIC 99.                                       
+           05 MRP          PIC 9(4)V9(2).                                
+           05 PRO-LOSS     PIC S9(4)V9(2).                               
+           05              PIC X(57).                                    
+        FD OUTFILE.                                                      
+        01 OUTREC          PIC X(80).                                    
+        WORKING-STORAGE SECTION.                                         
+        01 HEAD            PIC X(80) VALUE ' PET-ID    BREED    DDPUR    
+       -                        ' PRICE    QUANTITY    PROFIT '.         
+        01 DATE1.                                                        
+           05 YY PIC 99.                                                 
+           05 YY PIC 99.                                                
+           05 MM PIC 99.                                                
+           05 DD PIC 99.                                                
+        01 DATE2.                                                       
+           05              PIC X(60).                                   
+           05  T111.                                                    
+               10 Y       PIC 99.                                       
+               10 V1       PIC X   VALUE '/'.                           
+               10 H        PIC 99.                                      
+               10 V2       PIC X VALUE '/'.                             
+               10 T1       PIC 99.                                      
+        01 WS-PAGE.                                                     
+           05              PIC X(60).                                   
+           05 PG           PIC X(10) VALUE 'PAGE-NO:'.                  
+           05 WS-PG        PIC 99    VALUE  1.                          
+        77 WS-F1        PIC 99.                                         
+        77 WS-F2        PIC 99.                                         
+        77 WS-F3        PIC 99.                                         
+        77 WS-PET       PIC 9 VALUE 0.                                  
+        01 WS-DET.                                                      
+           05               PIC XX   VALUE SPACES.                      
+           05 WS-PET-ID        PIC X(3).                                
+           05               PIC X(4) VALUE SPACES.                      
+           05 WS-BREED         PIC X(10).                               
+           05               PIC X(4) VALUE SPACES.                      
+           05               PIC X(4) VALUE SPACES.                       
+           05 WS-DDPUR            PIC 9(6).                              
+           05               PIC X(4) VALUE SPACES.                       
+           05 WS-PRICE           PIC 9(4)V9(2).                          
+           05               PIC X(4) VALUE SPACES.                       
+           05 WS-QUANTITY        PIC 99.                                 
+           05               PIC X(4) VALUE SPACES.                       
+           05 WS-PRO-LOSS      PIC 9(4)V9(2).                            
+           05               PIC X(4).                                    
+        77 WS-PET-TYPE   PIC 9.                                          
+       *01 WS-TOT.                                                       
+       *   05               PIC X(16) VALUE 'TOTAL NUMBER OF '.          
+       *   05 WS-PTYPE      PIC X(5).                                    
+       *   05               PIC X(7)  VALUE ' SOLD'.                     
+       *   05 WS-PTOT       PIC 999.                                     
+        01 WS-PTYPE.                                                     
+           05 T             PIC X(15) VALUE 'PET TYPE'.                  
+           05 WS-P          PIC X(5)  VALUE SPACES.                      
+        01 WS-TOT.                                                       
+           05               PIC X(10) VALUE 'TOTAL QTY:'.                
+           05 WS-TOT-QTY    PIC 99                                       
+        01 WS-PRO.                                                       
+           05               PIC X(15) VALUE 'TOTAL PROFIT-LOSS'.         
+           05 WS-TOT-TEMP   PIC -9(4).9(2).                              
+        01 WS-FLG           PIC 9  VALUE 0.                              
+       01 WS-FLG           PIC 9  VALUE 0.                             
+       01 WS-LINE          PIC X(80) VALUE ALL '-'.                    
+       77 WS-LCTR          PIC 99    VALUE 1.                          
+       77 WS-TOT-PRO       PIC S9(4)V9(2).                             
+       77 TEMP             PIC  99.                                    
+       PROCEDURE DIVISION.                                             
+       MAIN-PARA.                                                      
+              PERFORM OPEN-PARA                                        
+              PERFORM READ-INPUT UNTIL WS-F2 NOT = 0                   
+              PERFORM SUMMARY-PARA                                     
+              CLOSE PROCESSEDFILE OUTFILE                              
+              CLOSE MASTERFILE                                         
+              STOP RUN.                                                
+       CNTRL-BREAK.                                                    
+               IF WS-FLG = 1                                           
+                  PERFORM SUMMARY-PARA                                 
+               END-IF                                                  
+               INITIALIZE WS-TOT-QTY                                   
+               MOVE 1 TO WS-FLG                                        
+               WRITE OUTREC  FROM WS-PAGE                              
+               EVALUATE TRUE                                           
+                  WHEN PET-TYPE = '1'                                  
+                     MOVE 'CAT' TO WS-P                                
+                  WHEN PET-TYPE = '2'                                  
+                     MOVE 'DOG' TO WS-P                                
+                      MOVE 'DOG' TO WS-P                                 
+                   WHEN PET-TYPE = '3'                                   
+                      MOVE 'BIRD' TO WS-P                                
+                   WHEN PET-TYPE = '4'                                   
+                      MOVE 'FISH' TO WS-P                                
+                END-EVALUATE                                             
+                ACCEPT DATE1 FROM DATE                                   
+                PERFORM REVERSE                                          
+       *        WRITE OUTREC1 FROM WS-PAGE                               
+                WRITE OUTREC  FROM DATE2                                 
+                WRITE OUTREC  FROM WS-PTYPE                              
+                WRITE OUTREC  FROM HEAD                                  
+                WRITE OUTREC  FROM WS-LINE                               
+                ADD  1  TO WS-PG.                                        
+                MOVE 0 TO WS-LCTR.                                       
+                MOVE 0 TO WS-TOT-PRO.                                    
+        READ-INPUT.                                                      
+                DISPLAY 'READING RECORDS'                                
+                READ PROCESSEDFILE                                       
+                    NOT AT END                                           
+                      DISPLAY 'ESDS:' PROCESSEDREC                       
+                      MOVE PET-ID OF PROCESSEDREC TO PET-ID OF MASREC    
+                      DISPLAY 'READ:' PET-ID OF MASREC                   
+                       READ MASTERFILE                                   
+                       KEY IS PET-ID OF MASREC                           
+                       KEY IS PET-ID OF MASREC                           
+                       NOT INVALID KEY                                   
+                       DISPLAY 'PETTYPE ' PET-TYPE WS-PET                
+                          IF PET-TYPE NOT = WS-PET-TYPE                  
+                          PERFORM CNTRL-BREAK                            
+                          END-IF                                         
+                          DISPLAY 'KEY NOT FOUND' PET-ID OF MASREC       
+                     MOVE PET-TYPE OF MASREC TO WS-PET-TYPE              
+                       MOVE BREED OF MASREC TO WS-BREED                  
+                       END-READ                                          
+                       MOVE PET-ID     OF PROCESSEDREC TO WS-PET-ID      
+                       MOVE DOP         OF PROCESSEDREC TO WS-DDPUR      
+                       MOVE MRP         OF PROCESSEDREC TO WS-PRICE      
+                       MOVE QUANTB OF PROCESSEDREC TO WS-QUANTITY        
+                       DISPLAY 'NOT FOUND:' QUANTB OF PROCESSEDREC       
+                       ADD QUANTB       OF PROCESSEDREC TO WS-TOT-QTY    
+                       MOVE PRO-LOSS    OF PROCESSEDREC TO WS-PRO-LOSS   
+                       ADD PRO-LOSS     OF PROCESSEDREC TO WS-TOT-PRO    
+                       DISPLAY "PROFIT:" PRO-LOSS "TOT:" WS-TOT-PRO      
+                       MOVE WS-TOT-PRO TO WS-TOT-TEMP                    
+                       DISPLAY WS-TOT-TEMP                               
+                       WRITE OUTREC    FROM WS-DET                       
+                 END-READ.                                               
+                 DISPLAY 'READ STS:' WS-F2.                              
+        OPEN-PARA.                                                       
+                OPEN INPUT MASTERFILE                                    
+                OPEN INPUT PROCESSEDFILE                                 
+                OPEN OUTPUT OUTFILE                                      
+                DISPLAY 'OPEN STATUS' WS-F2 ' ' WS-F3.                   
+        SUMMARY-PARA.                                                    
+                WRITE OUTREC  FROM WS-TOT                                
+                MOVE SPACES TO OUTREC                                    
+                WRITE OUTREC  FROM WS-PRO                                
+                MOVE SPACES TO OUTREC                                    
+                WRITE OUTREC.                                            
+        REVERSE.                                                         
+                MOVE YY TO T1                                            
+                MOVE DD TO Y                                             
+                MOVE MM TO H.                                            

@@ -1,0 +1,18 @@
+                                                             PAGE-NO:  01
+                                                             23/09/19    
+ PET TYPE       CAT                                                      
+  PET-ID    BREED    DDPUR     PRICE    QUANTITY    PROFIT               
+ ------------------------------------------------------------------------
+   111    SIAMESE       190923    500000    05    500000                 
+ TOTAL QTY:05                                                            
+ TOTAL PROFIT-LO 5000.00                                                 
+                                                                         
+                                                             PAGE-NO:  02
+                                                             23/09/19    
+ PET TYPE       DOG                                                      
+  PET-ID    BREED    DDPUR     PRICE    QUANTITY    PROFIT               
+ ------------------------------------------------------------------------
+   211    PUG           190923    020000    02    380000                 
+ TOTAL QTY:02                                                            
+ TOTAL PROFIT-LO 3800.00                                                 
+                                                                         

@@ -1,0 +1,7 @@
+        77 WS-F1          PIC 99.                                       
+        77 WS-F2          PIC 99.                                       
+        77 WS-F3          PIC 99.                                       
+        77 WS-F4          PIC 99.                                       
+        77 WS-TEMPREC1    PIC 9999V99.                                  
+        77 WS-TEMPREC2    PIC 9999V99.                                  
+        77 WS-TEMPREC3    PIC 9999V99.                                  

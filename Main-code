@@ -1,0 +1,175 @@
+      ******************************************************************00001000
+      * MASTER FILE CONTAINS THE DATA ABOUT THE PETS DIFFERENTIATED ON *00002000
+      * THE BASIS ON ID. WE HAVE SALE TRANSACTION REPORT WITH SOME ID. *00003000
+      * SORTSALEFILE CONTAINS SORTED SALETRANSACTION FILE ON PET-ID.   *00003104
+      * WE READ AND COMPARE THE ID OF SORTSALEFILE AND MASTER FILE     *00004004
+      * VALID ID DATA ARE WRITTEN IN PROCESSED FILE WHEREAS INVALID ID *00005000
+      * AND INVALID QUANTITY DATA ARE WRITTEN IN UNPROCESSED FILE.     *00006000
+      * OUR MAIN PGM CALLS SALESREPORT SUBPGM .                        *00007000
+      ******************************************************************00008000
+       ID DIVISION.                                                     00009000
+       PROGRAM-ID. CASTEST2.                                            00010000
+       ENVIRONMENT DIVISION.                                            00020000
+       INPUT-OUTPUT SECTION.                                            00030000
+       FILE-CONTROL.                                                    00040000
+            SELECT MASTERFILE ASSIGN TO KSDSDD1                         00050000
+            ORGANIZATION IS INDEXED                                     00060000
+            ACCESS MODE  IS DYNAMIC                                     00070000
+            RECORD KEY   IS PET-ID OF MASTERFILE                        00080000
+            FILE STATUS  IS WS-F1.                                      00090000
+      ******************************************************************00100000
+            SELECT SALETRANSACTION ASSIGN TO TRANSDD.                   00110000
+            SELECT SORT-FILE       ASSIGN TO SORTWK01.                  00120000
+            SELECT SORTSALEFILE    ASSIGN TO SALEDD                     00120100
+            ORGANIZATION IS SEQUENTIAL                                  00120200
+            ACCESS MODE  IS SEQUENTIAL                                  00120300
+            FILE STATUS  IS WS-F2.                                      00120400
+      ******************************************************************00120500
+            SELECT PROCESSEDFILE ASSIGN TO AS-PROCDD                    00120600
+            ORGANIZATION IS SEQUENTIAL                                  00120700
+            ACCESS MODE  IS SEQUENTIAL                                  00120800
+            FILE STATUS  IS WS-F3.                                      00120900
+      ******************************************************************00121000
+            SELECT UNPROCESSEDFILE ASSIGN TO UNPROCDD                   00122000
+            ORGANIZATION IS SEQUENTIAL                                  00123000
+            ACCESS MODE  IS SEQUENTIAL                                  00124000
+            FILE STATUS  IS WS-F4.                                      00125000
+      ******************************************************************00126000
+       DATA DIVISION.                                                   00127000
+       FILE SECTION.                                                    00128000
+       FD MASTERFILE.                                                   00129000
+       01 MASREC.                                                       00130000
+          05 PET-ID      PIC XXX.                                       00140000
+          05 PET-TYPE    PIC X.                                         00150000
+             88 CAT              VALUE '1'.                             00160000
+             88 DOG              VALUE '2'.                             00170000
+             88 BIRDS            VALUE '3'.                             00180000
+             88 FISH             VALUE '4'.                             00190000
+          05 BREED       PIC A(10).                                     00200000
+          05 DOP         PIC 999999.                                    00210000
+          05 COSTPR      PIC 9999V99.                                   00220000
+          05 QUANTA      PIC 99.                                        00230000
+          05             PIC X(52).                                     00240000
+       FD SALETRANSACTION.                                              00250000
+       01 TRANSREC.                                                     00260000
+          05 PET-ID      PIC 9(3).                                      00270000
+          05 MRP         PIC 9999V99.                                   00280000
+          05 QUANTB      PIC 99.                                        00290000
+          05             PIC X(69).                                     00300000
+       FD SORTSALEFILE.                                                 00310000
+       01 SALESREC.                                                     00320000
+          05 PET-ID      PIC 9(3).                                      00330000
+          05 MRP         PIC 9999V99.                                   00340000
+          05 QUANTB      PIC 99.                                        00350000
+          05             PIC X(69).                                     00360000
+       SD SORT-FILE.                                                    00370000
+       01 SORT-REC.                                                     00371000
+          05 PET-ID      PIC 9(3).                                      00372000
+          05             PIC X(77).                                     00373000
+       FD PROCESSEDFILE.                                                00374000
+       01 PROCESSEDREC.                                                 00375000
+          05 PET-ID      PIC 9(3).                                      00376000
+          05 DOP         PIC 999999.                                    00377000
+          05 QUANTB      PIC 99.                                        00378000
+          05 TOTPR       PIC 9999V99.                                   00379000
+          05 PRO-LOSS    PIC S9999V99.                                  00380000
+          05             PIC X(57).                                     00390000
+       FD UNPROCESSEDFILE.                                              00400000
+       01 UNPROCESSEDREC.                                               00410000
+          05 PET-ID      PIC 9(3).                                      00420000
+          05 MRP         PIC 9999V99.                                   00430000
+          05 QUANTB      PIC 99.                                        00440000
+          05 FILLER      PIC X(4).                                      00441000
+          05 REMARKS     PIC X(20).                                     00442000
+          05             PIC X(45).                                     00443000
+       WORKING-STORAGE SECTION.                                         00444000
+       COPY COPYBOOK.                                                   00445002
+      ******************************************************************00470000
+       PROCEDURE DIVISION.                                              00480000
+       MAIN-PARA.                                                       00490000
+              OPEN OUTPUT UNPROCESSEDFILE                               00500000
+              OPEN I-O MASTERFILE                                       00510000
+              OPEN OUTPUT PROCESSEDFILE                                 00520000
+              PERFORM SORT-PARA                                         00530000
+              CLOSE MASTERFILE                                          00540000
+              CLOSE UNPROCESSEDFILE                                     00550000
+              CLOSE PROCESSEDFILE                                       00551000
+              CALL 'SALESRPT'                                           00552003
+              STOP RUN.                                                 00553000
+      **************SORT SALETRANSACTION FILE************************** 00554000
+       SORT-PARA.                                                       00555000
+              DISPLAY "SORTING...."                                     00556000
+              SORT SORT-FILE                                            00557000
+              ASCENDING KEY PET-ID OF SORT-FILE                         00558000
+              USING SALETRANSACTION GIVING SORTSALEFILE                 00559000
+              IF SORT-RETURN NOT = 0                                    00559100
+                DISPLAY 'SORT RETURN' SORT-RETURN                       00559200
+              END-IF                                                    00559300
+                OPEN INPUT SORTSALEFILE                                 00559400
+              IF WS-F2 = 0                                              00559500
+                DISPLAY "OPEN SUCCESS"                                  00559600
+                PERFORM A100-READ-PARA UNTIL WS-F2 NOT = 0              00559700
+              END-IF                                                    00559800
+              CLOSE SORTSALEFILE.                                       00559900
+      ****************READ MASTERFILE AND SORTSALEFILE******************00560000
+       A100-READ-PARA.                                                  00561000
+              READ SORTSALEFILE                                         00562000
+              NOT AT END                                                00563000
+                MOVE PET-ID OF SORTSALEFILE TO PET-ID OF MASTERFILE     00564000
+              READ MASTERFILE                                           00565000
+                KEY IS PET-ID OF MASTERFILE                             00566000
+                INVALID KEY PERFORM A400-UNPROCESSED-PARA               00567000
+                NOT INVALID KEY PERFORM A300-CALCU-PARA                 00568000
+              END-READ                                                  00569000
+              END-READ.                                                 00570000
+      *****************WRITE PROCESSED FILE*****************************00580000
+       A300-CALCU-PARA.                                                 00590000
+              IF (QUANTA OF MASTERFILE < QUANTB OF SORTSALEFILE) OR     00591000
+                 (QUANTB OF SORTSALEFILE IS NOT NUMERIC)         OR     00592000
+                    (MRP OF SORTSALEFILE IS NOT NUMERIC)                00593000
+                PERFORM A400-UNPROCESSED-PARA                           00593100
+              ELSE                                                      00593200
+                PERFORM REWRITE-PARA                                    00593300
+                DISPLAY " OPENED "                                      00593400
+                PERFORM WRITE-ESDS-PARA                                 00593500
+              END-IF.                                                   00593600
+       WRITE-ESDS-PARA.                                                 00593700
+                DISPLAY "WRITE SUCCESS" WS-F3                           00593800
+                MOVE PET-ID OF SORTSALEFILE TO PET-ID OF                00593900
+                                             PROCESSEDFILE              00594000
+                 ACCEPT DOP OF PROCESSEDFILE FROM DATE                  00595000
+                MOVE QUANTB OF SORTSALEFILE TO QUANTB OF                00596000
+                                             PROCESSEDFILE              00597000
+                COMPUTE WS-TEMPREC1 = (MRP OF SORTSALEFILE *            00598000
+                                    QUANTB OF PROCESSEDFILE)            00599000
+                 MOVE WS-TEMPREC1 TO TOTPR OF PROCESSEDFILE             00600000
+                COMPUTE WS-TEMPREC2 = (MRP OF SORTSALEFILE -            00610000
+                        COSTPR OF MASTERFILE) * QUANTB OF PROCESSEDFILE 00620000
+                          MOVE WS-TEMPREC2 TO PRO-LOSS OF PROCESSEDFILE 00630000
+                WRITE PROCESSEDREC.                                     00640000
+      **************************UPDATE MASTERFILE********************** 00650000
+       REWRITE-PARA.                                                    00660000
+                COMPUTE WS-TEMPREC3 = (QUANTA OF MASTERFILE)-           00670000
+                                      (QUANTB OF SORTSALEFILE)          00680000
+                   MOVE WS-TEMPREC3 TO QUANTA OF MASTERFILE             00690000
+                REWRITE MASREC.                                         00700000
+      ***********************WRITE UNPROCESSED FILE******************** 00710000
+       A400-UNPROCESSED-PARA.                                           00720000
+                DISPLAY 'UNPROCESSED ' SALESREC                         00730000
+              IF WS-F4 NOT = 0                                          00740000
+                OPEN EXTEND UNPROCESSEDFILE                             00750000
+              END-IF                                                    00760000
+              MOVE SALESREC TO UNPROCESSEDREC                           00770000
+              IF ( PET-ID OF MASTERFILE NOT = PET-ID OF SORTSALEFILE)   00780000
+                      OR ( PET-ID OF SORTSALEFILE IS NOT NUMERIC )      00790000
+                      MOVE "INVALID ID" TO REMARKS                      00800000
+              END-IF                                                    00810000
+              IF ( QUANTA OF MASTERFILE < QUANTB OF SORTSALEFILE) OR    00820000
+                      (QUANTB OF SORTSALEFILE IS NOT NUMERIC)           00830000
+                      MOVE "INVALID QUANTITY" TO REMARKS                00840000
+              END-IF                                                    00850000
+              IF ( MRP OF SORTSALEFILE IS NOT NUMERIC)                  00851000
+                      MOVE "INVALID PRICE" TO REMARKS                   00851100
+              END-IF                                                    00851200
+                DISPLAY "WRITE SUCCESS" WS-F4                           00851300
+              WRITE UNPROCESSEDREC.                                     00851400
